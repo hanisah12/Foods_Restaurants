@@ -1,24 +1,27 @@
 from fastapi import FastAPI
-from routers.foods import food_router 
-from routers.restaurant import res_router
 from db.database import Base, engine
-
-### router -> importing foods router
+# routers -> foods router import
+# step-1
 from routers.foods import food_router
+from routers.restaurants import restaurant_router
+from routers.orders import orders_router
+from routers.customers import customers_router
+from routers.order_items import order_items_router
 
 Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
-
-##step -2 
-app.include_router(food_router)
-
-## decorator function
-@app.get("/welcome")
-def greeting():
-    return{"message": "Welcome to my server"}
+# step -2
+# decorator function
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 app.include_router(food_router)
-app.include_router(res_router)
+app.include_router(restaurant_router)
+app.include_router(orders_router)
+app.include_router(customers_router)
+app.include_router(order_items_router)
 
 
 

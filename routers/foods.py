@@ -1,31 +1,37 @@
-from fastapi import APIRouter,Depends
-from schemas.foods import Foods_schemas
-from dependencies import connect_db
+from fastapi import APIRouter, Depends
+
+# schema
+from schemas.foods import Foods_schema
+from dependencies import connect_to_db
 from sqlalchemy.orm import Session
 
-##
+# database models
 from models.foods import Foods
 
 
+food_router = APIRouter(prefix="/foods", tags=["Foods"])
 
-food_router=APIRouter(
-    prefix="/foods",
-    tags=["FOODS"]
-    )
 
-## get method
+# GET
 @food_router.get("/")
-def get_all_foods():
-    return{"message":""}
+def get_all_foods(dbs: Session = Depends(connect_to_db)):
+    all_foods = dbs.query(Foods).all()
+    return all_foods
 
-## get method
+
+# GET {id}
 @food_router.get("/{id}")
-def  get_all_foods(id:int):
-    return {"message":""}
+def get_food_by_id(id: int, dbs: Session = Depends(connect_to_db)):
+    particular_food = dbs.query(Foods).filter(Foods.id == id).first()
+    if not particular_food:
+        return {"message": "Invalid Id"}
+    return particular_food
+
 
 # POST
 @food_router.post("/")
-def get_all_foods(new_food:Foods_schemas, dbs: Session = Depends(connect_db)):
+def create_food(new_food: Foods_schema, dbs: Session = Depends(connect_to_db)):
+
     some_food_name = new_food.food_name
     some_price = new_food.price
     some_qty = new_food.qty
@@ -37,31 +43,54 @@ def get_all_foods(new_food:Foods_schemas, dbs: Session = Depends(connect_db)):
         qty=some_qty,
         availability=something_avl,
     )
+
     # adding the row
     dbs.add(new_entry)
-
     # committing the row
     dbs.commit()
-
     # refresh the table
     dbs.refresh(new_entry)
     return new_entry
 
+
+# PUT
+# @food_router.put("/{id}")
+# def update_food_by_id(
+#     latest_food: Foods_schema, id: int, dbs: Session = Depends(connect_to_db)
+# ):
+#     some_food_name = latest_food.food_name
+#     some_price = latest_food.price
+#     some_qty = latest_food.qty
+#     something_avl = latest_food.availability
+
+#     # update action
+#     particular_food = dbs.query(Foods).filter(Foods.id == id).first()
+#     if not particular_food:
+#         return {"message": "you have entered invalid id"}
+#     particular_food.food_name = some_food_name
+#     particular_food.price = some_price
+#     particular_food.qty = some_qty
+#     particular_food.availability = availability
+#     # r
+#     return {"message": "updated successfully"}
+
 @food_router.put("/{id}")
-def get_all_foods(latest_food:Foods_schemas):
-    return {"message":""}
+def update_products(id: int, changed: Foods_schema, dbs: Session = Depends(connect_to_db)):
+    latest_food = dbs.query( Foods).filter( Foods.id ==  id).first()
+    if not latest_food :
+        return {"message": "Invalid id"}
+    if changed.qty > latest_food.qty :
+        return {"message": "Not enough stock"}
+    latest_food .qty =latest_food .qty - changed.qty
+    latest_food .food_name = changed.food_name
+    latest_food .price = changed.price
+    latest_food .availability = changed.availability
+    dbs.commit()
+    dbs.refresh(latest_food )
+    return {"message": "updated", "data": latest_food }
 
+
+# DELETE
 @food_router.delete("/{id}")
-def delete_foods(latest_food:Foods_schemas):
-    return {"message":""}
-
-
-
-
-
-
-
-
-
-
-
+def delete_food_by_id(id: int):
+    return {"message": "deleted successfully"}
